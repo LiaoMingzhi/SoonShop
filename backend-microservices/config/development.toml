@@ -1,0 +1,96 @@
+# SoonShop Backend Microservices - Development Configuration
+
+[app]
+name = "SoonShop"
+version = "1.0.0"
+environment = "development"
+
+[database]
+# PostgreSQL 17.0 配置
+url = "postgresql://soonshop:soonshop789@localhost:5432/soonshop"
+host = "localhost"
+port = 5432
+name = "soonshop"
+username = "soonshop"
+password = "soonshop789"
+max_connections = 100
+min_connections = 5
+connect_timeout = 30
+idle_timeout = 600
+
+[redis]
+# Redis 7.0.15 配置
+url = "redis://localhost:6379"
+host = "localhost"
+port = 6379
+password = ""
+db = 0
+max_connections = 20
+
+[elasticsearch]
+# ElasticSearch 8.7.1 配置
+url = "http://localhost:9200"
+host = "localhost"
+port = 9200
+username = ""
+password = ""
+index_prefix = "soonshop"
+
+[jwt]
+secret = "your-super-secret-jwt-key-change-this-in-production"
+expires_in = 86400  # 24 hours
+algorithm = "HS256"
+
+[services]
+# 微服务端口配置
+user_service_port = 3001
+product_service_port = 3002
+order_service_port = 3003
+payment_service_port = 3004
+inventory_service_port = 3005
+notification_service_port = 3006
+analytics_service_port = 3007
+gateway_port = 8080
+
+[rabbitmq]
+# RabbitMQ 3.11 消息队列配置
+url = "amqp://admin:admin@localhost:5672"
+host = "localhost"
+port = 5672
+username = "admin"
+password = "admin"
+exchange = "soonshop_events"
+queue_prefix = "soonshop"
+
+[logging]
+level = "info"
+format = "json"
+output = "stdout"
+
+[monitoring]
+# 监控配置
+prometheus_port = 9090
+grafana_port = 4000
+jaeger_port = 16686
+metrics_enabled = true
+tracing_enabled = true
+
+[cache]
+# 缓存策略配置
+default_ttl = 300  # 5 minutes
+user_cache_ttl = 1800  # 30 minutes
+product_cache_ttl = 3600  # 1 hour
+
+[security]
+# 安全配置
+cors_origins = ["http://localhost:4000", "http://localhost:8080"]
+rate_limit_requests_per_minute = 100
+password_min_length = 8
+session_timeout = 3600
+
+[performance]
+# 性能配置
+request_timeout = 30
+max_request_size = "10MB"
+worker_threads = 4
+async_pool_size = 32 
