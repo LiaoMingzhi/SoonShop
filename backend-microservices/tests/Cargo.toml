@@ -1,0 +1,57 @@
+[package]
+name = "integration-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# HTTP客户端
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# 异步运行时
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+
+# JSON处理
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# UUID生成
+uuid = { version = "1.0", features = ["v4"] }
+
+# 随机数生成
+rand = "0.8"
+
+# 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+
+# 环境变量
+dotenv = "0.15"
+
+# 测试工具
+tokio-test = "0.4"
+
+# 容器测试(可选)
+testcontainers = "0.14"
+
+# 数据库连接(用于直接数据库验证)
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono"] }
+
+# Redis连接(用于缓存验证)
+redis = { version = "0.24", features = ["tokio-comp"] }
+
+# 消息队列连接(用于事件验证)
+lapin = "2.3"
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# 断言增强
+pretty_assertions = "1.4"
+
+# Base64编码
+base64 = "0.22"
+
+[[test]]
+name = "integration"
+path = "integration/mod.rs" 
