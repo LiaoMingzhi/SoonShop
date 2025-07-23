@@ -1,0 +1,353 @@
+---
+# Prometheus配置映射
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: soonshop
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'api-gateway'
+        static_configs:
+          - targets: ['api-gateway:8000']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'user-service'
+        static_configs:
+          - targets: ['user-service:8001']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'product-service'
+        static_configs:
+          - targets: ['product-service:8002']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'order-service'
+        static_configs:
+          - targets: ['order-service:8003']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'payment-service'
+        static_configs:
+          - targets: ['payment-service:8004']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'inventory-service'
+        static_configs:
+          - targets: ['inventory-service:8009']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'notification-service'
+        static_configs:
+          - targets: ['notification-service:8008']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+---
+# Prometheus持久卷声明
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: soonshop
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# Prometheus部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: soonshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:latest
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--web.enable-lifecycle'
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-storage
+          mountPath: /prometheus
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: prometheus-config
+        configMap:
+          name: prometheus-config
+      - name: prometheus-storage
+        persistentVolumeClaim:
+          claimName: prometheus-pvc
+
+---
+# Prometheus服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: soonshop
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - port: 9090
+    targetPort: 9090
+  type: ClusterIP
+
+---
+# Grafana配置映射
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: soonshop
+data:
+  prometheus.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true
+
+---
+# Grafana持久卷声明
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: soonshop
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# Grafana部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: soonshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: admin123
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
+
+---
+# Grafana服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: soonshop
+spec:
+  selector:
+    app: grafana
+  ports:
+  - port: 4000
+    targetPort: 3000
+  type: ClusterIP
+
+---
+# Jaeger部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: soonshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
+        ports:
+        - containerPort: 16686
+        - containerPort: 14268
+        - containerPort: 14250
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 16686
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 16686
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# Jaeger服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: soonshop
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: ui
+    port: 16686
+    targetPort: 16686
+  - name: collector
+    port: 14268
+    targetPort: 14268
+  - name: grpc
+    port: 14250
+    targetPort: 14250
+  type: ClusterIP
+
+---
+# Kibana部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: soonshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:8.7.1
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: http://elasticsearch:9200
+        ports:
+        - containerPort: 5601
+        livenessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 60
+          periodSeconds: 10
+
+---
+# Kibana服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: soonshop
+spec:
+  selector:
+    app: kibana
+  ports:
+  - port: 5601
+    targetPort: 5601
+  type: ClusterIP 

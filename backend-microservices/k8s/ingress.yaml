@@ -1,0 +1,145 @@
+---
+# Ingress控制器配置
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: soonshop-ingress
+  namespace: soonshop
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "64m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - api.soonshop.com
+    - monitoring.soonshop.com
+    secretName: soonshop-tls
+  rules:
+  # API Gateway外部访问
+  - host: api.soonshop.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8000
+  
+  # 监控服务外部访问
+  - host: monitoring.soonshop.com
+    http:
+      paths:
+             # Grafana仪表板
+       - path: /grafana
+         pathType: Prefix
+         backend:
+           service:
+             name: grafana
+             port:
+               number: 4000
+      
+      # Prometheus监控
+      - path: /prometheus
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus
+            port:
+              number: 9090
+      
+      # Jaeger链路追踪
+      - path: /jaeger
+        pathType: Prefix
+        backend:
+          service:
+            name: jaeger
+            port:
+              number: 16686
+      
+      # Kibana ElasticSearch可视化
+      - path: /kibana
+        pathType: Prefix
+        backend:
+          service:
+            name: kibana
+            port:
+              number: 5601
+      
+      # RabbitMQ管理界面
+      - path: /rabbitmq
+        pathType: Prefix
+        backend:
+          service:
+            name: rabbitmq
+            port:
+              number: 15672
+
+---
+# 集群内部访问Ingress（可选）
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: soonshop-internal-ingress
+  namespace: soonshop
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: internal.soonshop.local
+    http:
+      paths:
+      # 各个微服务内部访问
+      - path: /api/users
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8001
+      
+      - path: /api/products
+        pathType: Prefix
+        backend:
+          service:
+            name: product-service
+            port:
+              number: 8002
+      
+      - path: /api/orders
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8003
+      
+      - path: /api/payments
+        pathType: Prefix
+        backend:
+          service:
+            name: payment-service
+            port:
+              number: 8004
+      
+      - path: /api/inventory
+        pathType: Prefix
+        backend:
+          service:
+            name: inventory-service
+            port:
+              number: 8009
+      
+      - path: /api/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 8008 

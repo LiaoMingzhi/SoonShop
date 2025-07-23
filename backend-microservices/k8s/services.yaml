@@ -1,0 +1,598 @@
+---
+# 微服务配置映射
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microservices-config
+  namespace: soonshop
+data:
+  DATABASE_URL: "postgres://soonshop:soonshop123@postgres:5432/soonshop"
+  REDIS_URL: "redis://redis:6379"
+  RABBITMQ_URL: "amqp://soonshop:soonshop123@rabbitmq:5672"
+  JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
+  ELASTICSEARCH_URL: "http://elasticsearch:9200"
+
+---
+# 微服务密钥
+apiVersion: v1
+kind: Secret
+metadata:
+  name: microservices-secret
+  namespace: soonshop
+type: Opaque
+data:
+  JWT_SECRET: eW91ci1zdXBlci1zZWNyZXQtand0LWtleS1jaGFuZ2UtaW4tcHJvZHVjdGlvbg== # base64编码
+  STRIPE_SECRET_KEY: c2tfdGVzdF95b3VyX3N0cmlwZV9zZWNyZXRfa2V5 # base64编码
+  PAYPAL_CLIENT_ID: eW91cl9wYXlwYWxfY2xpZW50X2lk # base64编码
+  PAYPAL_CLIENT_SECRET: eW91cl9wYXlwYWxfY2xpZW50X3NlY3JldA== # base64编码
+  SMTP_PASSWORD: eW91ci1hcHAtcGFzc3dvcmQ= # base64编码
+
+---
+# API Gateway部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: soonshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: soonshop/api-gateway:latest
+        imagePullPolicy: Always
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8000"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: microservices-secret
+              key: JWT_SECRET
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: REDIS_URL
+        - name: JAEGER_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: JAEGER_ENDPOINT
+        - name: USER_SERVICE_URL
+          value: "http://user-service:8001"
+        - name: PRODUCT_SERVICE_URL
+          value: "http://product-service:8002"
+        - name: ORDER_SERVICE_URL
+          value: "http://order-service:8003"
+        - name: PAYMENT_SERVICE_URL
+          value: "http://payment-service:8004"
+        - name: INVENTORY_SERVICE_URL
+          value: "http://inventory-service:8009"
+        - name: NOTIFICATION_SERVICE_URL
+          value: "http://notification-service:8008"
+        ports:
+        - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# API Gateway服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: soonshop
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: LoadBalancer
+
+---
+# 用户服务部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: soonshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+      - name: user-service
+        image: soonshop/user-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8001"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: RABBITMQ_URL
+        - name: JAEGER_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: JAEGER_ENDPOINT
+        ports:
+        - containerPort: 8001
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# 用户服务Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: soonshop
+spec:
+  selector:
+    app: user-service
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP
+
+---
+# 产品服务部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: soonshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+      - name: product-service
+        image: soonshop/product-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8002"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: RABBITMQ_URL
+        - name: JAEGER_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: JAEGER_ENDPOINT
+        - name: ELASTICSEARCH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: ELASTICSEARCH_URL
+        ports:
+        - containerPort: 8002
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# 产品服务Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: soonshop
+spec:
+  selector:
+    app: product-service
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP
+
+---
+# 订单服务部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: soonshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: order-service
+        image: soonshop/order-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8003"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: RABBITMQ_URL
+        - name: JAEGER_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: JAEGER_ENDPOINT
+        ports:
+        - containerPort: 8003
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# 订单服务Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: soonshop
+spec:
+  selector:
+    app: order-service
+  ports:
+  - port: 8003
+    targetPort: 8003
+  type: ClusterIP
+
+---
+# 支付服务部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: soonshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+      - name: payment-service
+        image: soonshop/payment-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8004"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: RABBITMQ_URL
+        - name: JAEGER_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: JAEGER_ENDPOINT
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: microservices-secret
+              key: STRIPE_SECRET_KEY
+        - name: PAYPAL_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: microservices-secret
+              key: PAYPAL_CLIENT_ID
+        - name: PAYPAL_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: microservices-secret
+              key: PAYPAL_CLIENT_SECRET
+        ports:
+        - containerPort: 8004
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# 支付服务Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: soonshop
+spec:
+  selector:
+    app: payment-service
+  ports:
+  - port: 8004
+    targetPort: 8004
+  type: ClusterIP
+
+---
+# 库存服务部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+  namespace: soonshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inventory-service
+  template:
+    metadata:
+      labels:
+        app: inventory-service
+    spec:
+      containers:
+      - name: inventory-service
+        image: soonshop/inventory-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8009"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: RABBITMQ_URL
+        - name: JAEGER_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: JAEGER_ENDPOINT
+        ports:
+        - containerPort: 8009
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8009
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8009
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# 库存服务Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+  namespace: soonshop
+spec:
+  selector:
+    app: inventory-service
+  ports:
+  - port: 8009
+    targetPort: 8009
+  type: ClusterIP
+
+---
+# 通知服务部署
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: soonshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+      - name: notification-service
+        image: soonshop/notification-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8008"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: REDIS_URL
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: RABBITMQ_URL
+        - name: JAEGER_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: microservices-config
+              key: JAEGER_ENDPOINT
+        - name: SMTP_HOST
+          value: "smtp.gmail.com"
+        - name: SMTP_PORT
+          value: "587"
+        - name: SMTP_USER
+          value: "your-email@gmail.com"
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: microservices-secret
+              key: SMTP_PASSWORD
+        ports:
+        - containerPort: 8008
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8008
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8008
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# 通知服务Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: soonshop
+spec:
+  selector:
+    app: notification-service
+  ports:
+  - port: 8008
+    targetPort: 8008
+  type: ClusterIP 
