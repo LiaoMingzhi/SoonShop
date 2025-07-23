@@ -1,0 +1,34 @@
+[package]
+name = "soonshop-core"
+version = "1.0.0"
+description = "SoonShop核心智能合约 - 基于共产主义经济原理的商业平台"
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+homepage = "https://soonshop.com"
+repository = "https://github.com/soonshop/soonshop"
+keywords = ["solana", "blockchain", "communist", "commerce", "defi"]
+categories = ["cryptography::cryptocurrencies", "web-programming"]
+authors = ["SoonShop开发团队 <dev@soonshop.com>"]
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "soonshop_core"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+# Anchor framework
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+[dev-dependencies]
+anchor-client = { workspace = true } 

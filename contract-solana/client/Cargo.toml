@@ -1,0 +1,88 @@
+[package]
+name = "soonshop-client"
+version = "1.0.0"
+description = "SoonShop智能合约客户端SDK - Rust版本"
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+homepage = "https://soonshop.com"
+repository = "https://github.com/soonshop/soonshop"
+keywords = ["solana", "blockchain", "communist", "commerce", "sdk"]
+categories = ["cryptography::cryptocurrencies", "api-bindings"]
+authors = ["SoonShop开发团队 <dev@soonshop.com>"]
+
+[lib]
+name = "soonshop_client"
+crate-type = ["lib"]
+
+[dependencies]
+# Anchor framework
+anchor-lang = { workspace = true }
+anchor-client = { workspace = true }
+anchor-spl = { workspace = true }
+
+# Solana core
+solana-sdk = { workspace = true }
+solana-client = { workspace = true }
+solana-cli-config = { workspace = true }
+
+# SPL Token support
+spl-token = { workspace = true }
+spl-associated-token-account = { workspace = true }
+
+# Core contract
+soonshop-core = { path = "../programs/soonshop-core", features = ["no-entrypoint"] }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+borsh = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Utilities
+bs58 = { workspace = true }
+hex = { workspace = true }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"], optional = true }
+
+# WebSocket client
+tokio-tungstenite = { version = "0.24", features = ["native-tls"], optional = true }
+futures-util = "0.3"
+
+# Configuration
+config = "0.14"
+dirs = "5.0"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Date and time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID generation
+uuid = { version = "1.10", features = ["v4"] }
+
+# Random number generation
+rand = "0.8"
+
+# Binary encoding
+bincode = "1.3"
+
+[dev-dependencies]
+tokio-test = "0.4"
+pretty_assertions = { workspace = true }
+tempfile = "3.8"
+
+[features]
+default = ["http", "websocket"]
+http = ["reqwest"]
+websocket = ["tokio-tungstenite"]
+testing = [] 

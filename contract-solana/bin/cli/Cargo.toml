@@ -1,0 +1,29 @@
+[package]
+name = "soonshop-cli"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "cli"
+path = "src/main.rs"
+
+[dependencies]
+anchor-client = { workspace = true }
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
+anyhow = { workspace = true }
+async-channel = "1.6"
+base64 = "0.21"
+clap = { version = "3.1.8", features = ["derive", "env"] }
+dotenv = "0.15.0"
+futures = "0.3.21"
+soonshop-client = { path = "../../client" }
+soonshop-core = { path = "../../programs/soonshop-core", features = ["no-entrypoint"] }
+serde_json = { workspace = true }
+solana-client = { workspace = true }
+solana-sdk = { workspace = true }
+tokio = { workspace = true }
+itertools = "0.10.3"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+chrono = "0.4.31"

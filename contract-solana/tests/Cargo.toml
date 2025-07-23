@@ -1,0 +1,90 @@
+[package]
+name = "soonshop-tests"
+version = "1.0.0"
+description = "SoonShop智能合约集成测试套件"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "integration_tests"
+path = "integration_tests.rs"
+
+[[bin]]
+name = "performance_tests"
+path = "performance_tests.rs"
+
+[[bin]]
+name = "security_tests"
+path = "security_tests.rs"
+
+[dependencies]
+# Core contracts
+soonshop-core = { path = "../programs/soonshop-core", features = ["no-entrypoint"] }
+
+# Client SDK
+soonshop-client = { path = "../client" }
+
+# Anchor framework
+anchor-lang = { workspace = true }
+anchor-client = { workspace = true }
+anchor-spl = { workspace = true }
+
+# Solana testing
+solana-sdk = { workspace = true }
+solana-client = { workspace = true }
+solana-program-test = "1.18.26"
+solana-validator = "1.18.26"
+
+# SPL Token support
+spl-token = { workspace = true }
+spl-associated-token-account = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Testing utilities
+pretty_assertions = { workspace = true }
+assert_matches = "1.5"
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+borsh = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Utilities
+bs58 = { workspace = true }
+hex = { workspace = true }
+
+# Date and time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID generation
+uuid = { version = "1.10", features = ["v4"] }
+
+# Random generation for testing
+rand = "0.8"
+fake = { version = "2.9", features = ["derive", "chrono"] }
+
+# Performance testing
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Logging for tests
+env_logger = { workspace = true }
+log = { workspace = true }
+
+# Property-based testing
+proptest = "1.4"
+proptest-derive = "0.5"
+
+# Temporary files for testing
+tempfile = "3.8"
+
+[features]
+default = []
+local-validator = []
+devnet = []
+mainnet = [] 

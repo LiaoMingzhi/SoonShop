@@ -1,0 +1,57 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "removeComments": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": ["node", "jest"],
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/types": ["src/types/index"],
+      "@/utils": ["src/utils/index"],
+      "@/client": ["src/client/index"],
+      "@/instructions": ["src/instructions/index"],
+      "@/accounts": ["src/accounts/index"],
+      "@/events": ["src/events/index"],
+      "@/errors": ["src/errors/index"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "lib",
+    "dist",
+    "target",
+    "**/*.js",
+    "**/*.d.ts"
+  ],
+  "ts-node": {
+    "esm": true,
+    "compilerOptions": {
+      "module": "ESNext"
+    }
+  }
+} 
