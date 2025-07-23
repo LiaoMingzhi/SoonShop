@@ -1,0 +1,61 @@
+[workspace]
+resolver = "2"
+members = [
+    "services/user-service",
+    "services/product-service", 
+    "services/order-service",
+    "services/payment-service",
+    "services/inventory-service",
+    "services/notification-service",
+    "services/api-gateway",
+    "services/enterprise-service",
+    "services/evaluation-service",
+    "services/price-service",
+    "services/b2c-service",
+    "services/restaurant-service",
+    "services/healthcare-service",
+    "services/housing-service",
+    "services/education-service",
+    "shared/common",
+    "shared/events",
+    "shared/schemas",
+    "shared/event-bus",
+    "shared/monitoring",
+    "tests",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88.0"
+authors = ["SoonShop Team <team@soonshop.com>"]
+license = "MIT"
+repository = "https://github.com/soonshop/backend-microservices"
+
+[workspace.dependencies]
+tokio = { version = "1.40", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+actix-web = "4.11"
+actix-rt = "2.10"
+actix-cors = "0.7"
+sea-orm = { version = "1.1", features = ["runtime-tokio-rustls", "sqlx-postgres", "chrono", "uuid"] }
+sea-orm-migration = "1.1"
+redis = { version = "0.27", features = ["tokio-comp"] }
+reqwest = { version = "0.12", features = ["json"] }
+lapin = "2.3"
+prometheus = "0.13"
+config = "0.14"
+clap = { version = "4.5", features = ["derive"] }
+async-trait = "0.1"
+futures = "0.3"
+bcrypt = "0.15"
+jsonwebtoken = "9.3"
+validator = { version = "0.18", features = ["derive"] }
+ 

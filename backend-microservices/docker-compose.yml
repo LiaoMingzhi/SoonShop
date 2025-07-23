@@ -1,0 +1,359 @@
+version: '3.8'
+
+services:
+  # 数据库服务
+  postgres:
+    image: postgres:15-alpine
+    container_name: soonshop-postgres
+    environment:
+      POSTGRES_DB: soonshop
+      POSTGRES_USER: soonshop
+      POSTGRES_PASSWORD: soonshop123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soonshop"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: soonshop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - soonshop-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RabbitMQ消息队列
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: soonshop-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: soonshop
+      RABBITMQ_DEFAULT_PASS: soonshop123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ElasticSearch搜索引擎
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
+    container_name: soonshop-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - cluster.name=soonshop-cluster
+      - node.name=soonshop-node
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Jaeger链路追踪
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: soonshop-jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    networks:
+      - soonshop-network
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: soonshop-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - soonshop-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+  # Grafana可视化
+  grafana:
+    image: grafana/grafana:latest
+    container_name: soonshop-grafana
+    ports:
+      - "4000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - soonshop-network
+
+  # Kibana ElasticSearch可视化
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.7.1
+    container_name: soonshop-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - soonshop-network
+
+  # API网关
+  api-gateway:
+    build: 
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: soonshop-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      REDIS_URL: redis://redis:6379
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      USER_SERVICE_URL: http://user-service:8001
+      PRODUCT_SERVICE_URL: http://product-service:8002
+      ORDER_SERVICE_URL: http://order-service:8003
+      PAYMENT_SERVICE_URL: http://payment-service:8004
+      VOUCHER_SERVICE_URL: http://voucher-service:8005
+      REWARD_SERVICE_URL: http://reward-service:8006
+      EVALUATION_SERVICE_URL: http://evaluation-service:8007
+      NOTIFICATION_SERVICE_URL: http://notification-service:8008
+      INVENTORY_SERVICE_URL: http://inventory-service:8009
+    depends_on:
+      - redis
+      - jaeger
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 用户服务
+  user-service:
+    build: 
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: soonshop-user-service
+    ports:
+      - "8001:8001"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8001
+      DATABASE_URL: postgres://soonshop:soonshop123@postgres:5432/soonshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://soonshop:soonshop123@rabbitmq:5672
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 产品服务
+  product-service:
+    build: 
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    container_name: soonshop-product-service
+    ports:
+      - "8002:8002"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8002
+      DATABASE_URL: postgres://soonshop:soonshop123@postgres:5432/soonshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://soonshop:soonshop123@rabbitmq:5672
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - elasticsearch
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 订单服务
+  order-service:
+    build: 
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: soonshop-order-service
+    ports:
+      - "8003:8003"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8003
+      DATABASE_URL: postgres://soonshop:soonshop123@postgres:5432/soonshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://soonshop:soonshop123@rabbitmq:5672
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 支付服务
+  payment-service:
+    build: 
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: soonshop-payment-service
+    ports:
+      - "8004:8004"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8004
+      DATABASE_URL: postgres://soonshop:soonshop123@postgres:5432/soonshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://soonshop:soonshop123@rabbitmq:5672
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      STRIPE_SECRET_KEY: sk_test_your_stripe_secret_key
+      PAYPAL_CLIENT_ID: your_paypal_client_id
+      PAYPAL_CLIENT_SECRET: your_paypal_client_secret
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 库存服务
+  inventory-service:
+    build: 
+      context: ./services/inventory-service
+      dockerfile: Dockerfile
+    container_name: soonshop-inventory-service
+    ports:
+      - "8009:8009"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8009
+      DATABASE_URL: postgres://soonshop:soonshop123@postgres:5432/soonshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://soonshop:soonshop123@rabbitmq:5672
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 通知服务
+  notification-service:
+    build: 
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: soonshop-notification-service
+    ports:
+      - "8008:8008"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8008
+      DATABASE_URL: postgres://soonshop:soonshop123@postgres:5432/soonshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://soonshop:soonshop123@rabbitmq:5672
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: your-email@gmail.com
+      SMTP_PASSWORD: your-app-password
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - soonshop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  soonshop-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  elasticsearch_data:
+  prometheus_data:
+  grafana_data: 
