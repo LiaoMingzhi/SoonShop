@@ -1,0 +1,94 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus自己的监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway监控
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 用户服务监控
+  - job_name: 'user-service'
+    static_configs:
+      - targets: ['user-service:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 产品服务监控
+  - job_name: 'product-service'
+    static_configs:
+      - targets: ['product-service:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 订单服务监控
+  - job_name: 'order-service'
+    static_configs:
+      - targets: ['order-service:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 支付服务监控
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment-service:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 库存服务监控
+  - job_name: 'inventory-service'
+    static_configs:
+      - targets: ['inventory-service:8009']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 通知服务监控
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8008']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # PostgreSQL数据库监控
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 60s
+
+  # Redis缓存监控
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 60s
+
+  # RabbitMQ消息队列监控
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15672']
+    metrics_path: '/api/metrics'
+    scrape_interval: 60s
+
+  # ElasticSearch搜索引擎监控
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+    metrics_path: '/_prometheus/metrics'
+    scrape_interval: 60s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093 
