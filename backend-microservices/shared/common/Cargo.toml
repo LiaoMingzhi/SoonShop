@@ -1,0 +1,41 @@
+[package]
+name = "common"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+sea-orm = { workspace = true }
+sea-orm-migration = { workspace = true }
+redis = { workspace = true }
+reqwest = { workspace = true }
+lapin = { workspace = true }
+prometheus = { workspace = true }
+config = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+bcrypt = { workspace = true }
+jsonwebtoken = { workspace = true }
+validator = { workspace = true }
+
+
+# 中间件相关
+actix-web = { workspace = true }
+actix-rt = { workspace = true }
+actix-cors = { workspace = true }
+
+# 工具库
+once_cell = "1.19"
+lazy_static = "1.4" 

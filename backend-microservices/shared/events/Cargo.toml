@@ -1,0 +1,56 @@
+[package]
+name = "events"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# 异步运行时
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# UUID生成
+uuid = { workspace = true }
+
+# 时间处理
+chrono = { workspace = true }
+
+# 错误处理
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# RabbitMQ客户端
+lapin = { workspace = true }
+
+# 日志
+tracing = { workspace = true }
+
+# 数据库连接 (可选)
+sea-orm = { workspace = true, optional = true }
+
+# Prometheus指标 (可选)
+prometheus = { workspace = true, optional = true }
+
+# Redis (可选)
+redis = { workspace = true, optional = true }
+
+# 随机数生成
+rand = "0.8"
+
+[features]
+default = ["postgres", "prometheus"]
+postgres = ["sea-orm"]
+redis-support = ["redis"]
+metrics = ["prometheus"]
+
+[dev-dependencies]
+tokio-test = "0.4"
+pretty_assertions = "1.4" 
