@@ -1,0 +1,46 @@
+[package]
+name = "user-service"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+actix-web = { workspace = true }
+actix-rt = { workspace = true }
+actix-cors = { workspace = true }
+sea-orm = { workspace = true }
+sea-orm-migration = { workspace = true }
+redis = { workspace = true }
+reqwest = { workspace = true }
+lapin = { workspace = true }
+prometheus = { workspace = true }
+config = { workspace = true }
+clap = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# 共享库依赖
+common = { path = "../../shared/common" }
+events = { path = "../../shared/events" }
+schemas = { path = "../../shared/schemas" }
+
+# 特定依赖
+bcrypt = { workspace = true }
+jsonwebtoken = { workspace = true }
+validator = { workspace = true }
+
+[[bin]]
+name = "user-service"
+path = "src/main.rs" 
