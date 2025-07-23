@@ -1,0 +1,66 @@
+[package]
+name = "payment-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+actix-web = "4.9"
+actix-cors = "0.7"
+actix-rt = "2.10"
+
+# Async runtime and utilities
+tokio = { version = "1.42", features = ["full"] }
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_urlencoded = "0.7"
+
+# Database
+sea-orm = { version = "1.1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
+sea-orm-migration = "1.1"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Utilities
+uuid = { version = "1.10", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+rust_decimal = { version = "1.35", features = ["serde"] }
+validator = { version = "0.18", features = ["derive"] }
+rand = "0.8"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-actix-web = "0.7"
+log = "0.4"
+env_logger = "0.10"
+
+# Configuration
+config = "0.13"
+dotenv = "0.15"
+
+# Solana
+solana-client = "2.3"
+solana-sdk = "2.3"
+anchor-client = "0.31"
+
+# Message queue
+lapin = "2.0"
+
+# Caching
+redis = "0.27"
+
+# Security and encryption
+aes-gcm = "0.10"
+base64 = "0.22"
+
+# Shared libraries
+common = { path = "../../shared/common" }
+schemas = { path = "../../shared/schemas" }
+events = { path = "../../shared/events" } 
