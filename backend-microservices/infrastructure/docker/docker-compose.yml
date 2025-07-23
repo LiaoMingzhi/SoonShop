@@ -1,0 +1,165 @@
+version: '3.8'
+
+services:
+  # 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: soonshop-postgres
+    environment:
+      POSTGRES_DB: soonshop
+      POSTGRES_USER: soonshop
+      POSTGRES_PASSWORD: soonshop123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - soonshop-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: soonshop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - soonshop-network
+
+  # RabbitMQ消息队列
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: soonshop-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: soonshop
+      RABBITMQ_DEFAULT_PASS: soonshop123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - soonshop-network
+
+  # Elasticsearch for search
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: soonshop-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - soonshop-network
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: soonshop-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - soonshop-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: soonshop-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - soonshop-network
+
+  # Jaeger for tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: soonshop-jaeger
+    ports:
+      - "14268:14268"
+      - "16686:16686"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - soonshop-network
+
+  # API Gateway
+  gateway:
+    build:
+      context: ../../
+      dockerfile: gateway/Dockerfile
+    container_name: soonshop-gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    environment:
+      - DATABASE_URL=postgresql://soonshop:soonshop123@postgres:5432/soonshop
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://soonshop:soonshop123@rabbitmq:5672
+    networks:
+      - soonshop-network
+
+  # 用户服务
+  user-service:
+    build:
+      context: ../../
+      dockerfile: services/user-service/Dockerfile
+    container_name: soonshop-user-service
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    environment:
+      - DATABASE_URL=postgresql://soonshop:soonshop123@postgres:5432/soonshop
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://soonshop:soonshop123@rabbitmq:5672
+      - JWT_SECRET=your-secret-key-here
+    networks:
+      - soonshop-network
+
+  # 产品服务
+  product-service:
+    build:
+      context: ../../
+      dockerfile: services/product-service/Dockerfile
+    container_name: soonshop-product-service
+    ports:
+      - "8002:8002"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - elasticsearch
+    environment:
+      - DATABASE_URL=postgresql://soonshop:soonshop123@postgres:5432/soonshop
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://soonshop:soonshop123@rabbitmq:5672
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    networks:
+      - soonshop-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  elasticsearch_data:
+  grafana_data:
+
+networks:
+  soonshop-network:
+    driver: bridge 
